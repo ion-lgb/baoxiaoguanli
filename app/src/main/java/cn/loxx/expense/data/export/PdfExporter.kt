@@ -46,6 +46,11 @@ class PdfExporter {
     ): ByteArray {
         val baos = ByteArrayOutputStream()
         val pdf = PdfDocument(PdfWriter(baos))
+        pdf.documentInfo
+            .setSubject(
+                "Source: https://github.com/ion-lgb/baoxiaoguanli — licensed AGPL-3.0-only",
+            )
+            .setKeywords("iText, AGPL-3.0-only, open source reimbursement report")
         val document = Document(pdf, PageSize.A4)
 
         val font: PdfFont = if (fontBytes != null) {

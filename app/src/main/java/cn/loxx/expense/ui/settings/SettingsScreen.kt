@@ -1,5 +1,7 @@
 package cn.loxx.expense.ui.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -55,7 +57,8 @@ import cn.loxx.expense.ui.component.CategoryIcons
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
-    val app = LocalContext.current.applicationContext as ExpenseApp
+    val context = LocalContext.current
+    val app = context.applicationContext as ExpenseApp
     val viewModel: SettingsViewModel = viewModel {
         SettingsViewModel(
             app.container.categoryRepository,
@@ -254,6 +257,33 @@ fun SettingsScreen(onBack: () -> Unit) {
                     ) { Text("备份列表") }
                 }
 
+            }
+
+            SectionCard("开源与许可证") {
+                Text(
+                    text = "Copyright © 2026 ion-lgb",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "本应用按 GNU AGPL v3.0 only 发布，不提供任何担保。PDF 功能使用 iText 7 Community（AGPLv3）。",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://github.com/ion-lgb/baoxiaoguanli"),
+                            ),
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("查看源码与许可证")
+                }
             }
         }
     }

@@ -4,6 +4,9 @@ import cn.loxx.expense.data.export.PdfExporter
 import cn.loxx.expense.data.local.CategoryEntity
 import cn.loxx.expense.data.local.ExpenseEntity
 import cn.loxx.expense.data.local.TripEntity
+import com.itextpdf.kernel.pdf.PdfDocument
+import com.itextpdf.kernel.pdf.PdfReader
+import java.io.ByteArrayInputStream
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -74,5 +77,11 @@ class PdfExporterTest {
 
         assertTrue(result.isNotEmpty())
         assertTrue(result.size > 1024)
+
+        PdfDocument(PdfReader(ByteArrayInputStream(result))).use { pdf ->
+            assertTrue(pdf.documentInfo.producer.contains("iText", ignoreCase = true))
+            assertTrue(pdf.documentInfo.subject.contains("github.com/ion-lgb/baoxiaoguanli"))
+            assertTrue(pdf.documentInfo.keywords.contains("AGPL-3.0-only"))
+        }
     }
 }
