@@ -5,18 +5,34 @@
 
 一款本地优先的 Android 个人出差费用与报销管理应用。使用 Kotlin、Jetpack Compose 与 Room 构建，支持行程、费用、图片/PDF 凭证、PDF 报销单、Excel+凭证 ZIP，以及手动 WebDAV 备份与恢复。
 
+## 截图
+
+| 首页（汇总 + 行程） | 行程详情（分类占比） |
+| --- | --- |
+| ![首页](docs/screenshots/home.png) | ![行程详情](docs/screenshots/trip_detail.png) |
+
+| 记一笔（底部弹窗） | 报销单预览 | 深色模式 |
+| --- | --- | --- |
+| ![记一笔](docs/screenshots/expense_sheet.png) | ![报销单预览](docs/screenshots/report_preview.png) | ![深色模式](docs/screenshots/dark_home.png) |
+
+> 流体玻璃视觉：极光渐变背景 + 背景实时虚化（[Haze](https://github.com/chrisbanes/haze)），Android 12 以下自动降级为半透明材质。
+
 > 项目仍处于早期阶段。使用真实报销数据前，请自行验证导出内容与 WebDAV 恢复流程，并保留独立备份。
 
 ## 功能
 
-- 创建、编辑、完成和删除出差行程
+- 创建、编辑、完成、报销标记和删除出差行程（首页左滑删除）
+- 首页汇总条：进行中行程数、今年累计支出、待报销金额
 - 按行程记录费用，金额统一使用人民币“分”（`Long`）存储
-- 内置分类与自定义分类
-- 从相册、相机或文件选择器添加图片/PDF 凭证
+- 行程详情内置分类占比图，支出按日期分组
+- 内置分类与自定义分类（可选图标）
+- 从相册、相机或文件选择器添加图片/PDF 凭证，列表内直接预览缩略图
+- 记一笔 / 新建行程均为底部弹窗，新增费用日期自动收进行程范围
 - 生成包含费用明细、分类汇总与凭证附页的 PDF 报销单
-- 导出 Excel 明细与凭证 ZIP 包
+- 导出 Excel 明细与凭证 ZIP 包，文件名可读（`报销单_行程_时间戳`）
 - 配置 WebDAV，手动备份、查看备份和恢复数据
 - 数据默认保存在本机，不依赖后端服务
+- 深色模式完整适配
 
 ## 技术栈
 
@@ -26,6 +42,7 @@
 - Jetpack Compose / Material 3
 - Navigation-Compose 类型安全路由
 - Room 3.0.1（`androidx.room3`）+ Bundled SQLite
+- Haze 1.7.2（玻璃拟态背景虚化）
 - Coil 3
 - iText 7.2.6（PDF，AGPLv3）
 - Apache POI 5.5.1（Excel）
