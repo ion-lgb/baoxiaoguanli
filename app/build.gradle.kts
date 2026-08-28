@@ -21,7 +21,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -58,6 +59,12 @@ kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
     }
+}
+
+// Android already provides org.xmlpull.v1.* — exclude the xpp3 library globally
+// to prevent R8 library/program class conflicts.
+configurations.configureEach {
+    exclude(group = "xpp3", module = "xpp3")
 }
 
 dependencies {
