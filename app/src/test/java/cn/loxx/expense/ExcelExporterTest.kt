@@ -103,4 +103,58 @@ class ExcelExporterTest {
         assertEquals(expenses.size + 2, sheet.lastRowNum + 1)
         workbook.close()
     }
+
+    @Test
+    fun generate_keepsMultipleReceiptsForOneExpense() {
+        val now = System.currentTimeMillis()
+        val trip = TripEntity(
+            id = 1,
+            title = "测试",
+            destination = "上海",
+            startDate = now,
+            endDate = now,
+            status = "ongoing",
+            note = "",
+            createdAt = now,
+            updatedAt = now,
+        )
+        val expense = ExpenseEntity(
+            id = 1,
+            tripId = 1,
+            categoryId = 1,
+            amountCents = 5000,
+            description = "午餐",
+            date = now,
+            createdAt = now,
+            updatedAt = now,
+        )
+        val category = CategoryEntity(
+            id = 1,
+            name = "餐饮",
+            icon = "restaurant",
+            isBuiltin = true,
+            sortOrder = 1,
+            createdAt = now,
+        )
+        val receipts = listOf(
+            ReceiptExport(expense.id, "image", "a.jpg", ByteArray(10) { 1 }),
+            ReceiptExport(expense.id, "image", "b.jpg", ByteArray(10) { 2 }),
+        )
+
+        val result = ExcelExporter().generate(trip, listOf(expense), listOf(category), receipts)
+
+        val receiptEntries = mutableListOf<String>()
+        ZipInputStream(ByteArrayInputStream(result)).use { zip ->
+            var entry = zip.nextEntry
+            while (entry != null) {
+                if (entry.name.contains("/凭证/")) {
+                    receiptEntries += entry.name
+                }
+                zip.readBytes()
+                entry = zip.nextEntry
+            }
+        }
+        assertEquals(2, receiptEntries.size)
+        assertEquals(2, receiptEntries.toSet().size)
+    }
 }

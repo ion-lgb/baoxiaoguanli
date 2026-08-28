@@ -2,10 +2,14 @@ package cn.loxx.expense.data.repository
 
 import cn.loxx.expense.data.local.CategoryDao
 import cn.loxx.expense.data.local.CategoryEntity
+import cn.loxx.expense.data.local.ExpenseDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
-class CategoryRepository(private val categoryDao: CategoryDao) {
+class CategoryRepository(
+    private val categoryDao: CategoryDao,
+    private val expenseDao: ExpenseDao,
+) {
     fun getAll(): Flow<List<CategoryEntity>> = categoryDao.getAll()
 
     fun getById(id: Long): Flow<CategoryEntity?> = categoryDao.getById(id)
@@ -29,6 +33,10 @@ class CategoryRepository(private val categoryDao: CategoryDao) {
     }
 
     suspend fun delete(category: CategoryEntity) {
+        require(!category.isBuiltin) { "内置分类不能删除" }
+        check(expenseDao.countByCategoryId(category.id) == 0L) {
+            "该分类已有费用记录，不能删除"
+        }
         categoryDao.delete(category)
     }
 

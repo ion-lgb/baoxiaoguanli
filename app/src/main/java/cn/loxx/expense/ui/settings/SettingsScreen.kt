@@ -71,12 +71,20 @@ fun SettingsScreen(onBack: () -> Unit) {
     var selectedIcon by remember { mutableStateOf(CategoryIcons.selectable.first().first) }
     var renameTarget by remember { mutableStateOf<CategoryEntity?>(null) }
     var renameText by remember { mutableStateOf("") }
+    var deleteTarget by remember { mutableStateOf<CategoryEntity?>(null) }
 
     var showResult by remember { mutableStateOf(false) }
     var resultTitle by remember { mutableStateOf("") }
     var resultText by remember { mutableStateOf("") }
-
-    fun newClient() = WebDavClient(settings.webdavUrl, settings.webdavUser, settings.webdavPass)
+    fun clientOrNull(): WebDavClient? {
+        if (settings.webdavUrl.isBlank()) {
+            resultTitle = "WebDAV 配置"
+            resultText = "请先填写服务器地址"
+            showResult = true
+            return null
+        }
+        return WebDavClient(settings.webdavUrl, settings.webdavUser, settings.webdavPass)
+    }
 
     Scaffold(
         topBar = {
@@ -148,7 +156,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                             ) {
                                 Icon(Icons.Filled.Edit, contentDescription = "重命名")
                             }
-                            IconButton(onClick = { viewModel.deleteCategory(category) }) {
+                            IconButton(onClick = { deleteTarget = category }) {
                                 Icon(Icons.Filled.Delete, contentDescription = "删除")
                             }
                         }
@@ -198,7 +206,8 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = {
-                            viewModel.testConnection(newClient()) { ok ->
+                            val client = clientOrNull() ?: return@Button
+                            viewModel.testConnection(client) { ok ->
                                 resultTitle = "测试连接"
                                 resultText = if (ok) "连接成功" else "连接失败"
                                 showResult = true
@@ -208,7 +217,8 @@ fun SettingsScreen(onBack: () -> Unit) {
                     ) { Text("测试连接") }
                     Button(
                         onClick = {
-                            viewModel.backup(newClient()) { error ->
+                            val client = clientOrNull() ?: return@Button
+                            viewModel.backup(client) { error ->
                                 resultTitle = "立即备份"
                                 resultText = if (error == null) "备份成功" else "备份失败：$error"
                                 showResult = true
@@ -221,7 +231,8 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = {
-                            viewModel.restore(newClient()) { error ->
+                            val client = clientOrNull() ?: return@Button
+                            viewModel.restore(client) { error ->
                                 resultTitle = "恢复备份"
                                 resultText = if (error == null) "恢复成功" else "恢复失败：$error"
                                 showResult = true
@@ -231,7 +242,8 @@ fun SettingsScreen(onBack: () -> Unit) {
                     ) { Text("恢复备份") }
                     Button(
                         onClick = {
-                            viewModel.listBackups(newClient()) { backups ->
+                            val client = clientOrNull() ?: return@Button
+                            viewModel.listBackups(client) { backups ->
                                 resultTitle = "备份列表"
                                 resultText =
                                     if (backups.isEmpty()) "暂无备份" else backups.joinToString("\n")
@@ -241,8 +253,31 @@ fun SettingsScreen(onBack: () -> Unit) {
                         modifier = Modifier.weight(1f),
                     ) { Text("备份列表") }
                 }
+
             }
         }
+    }
+    deleteTarget?.let { category ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("删除分类？") },
+            text = { Text("仅未被费用使用的自定义分类可以删除。") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteCategory(category) { error ->
+                            resultTitle = "删除分类"
+                            resultText = error ?: "删除成功"
+                            showResult = true
+                        }
+                        deleteTarget = null
+                    },
+                ) { Text("删除") }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) { Text("取消") }
+            },
+        )
     }
 
     if (showAddCategory) {

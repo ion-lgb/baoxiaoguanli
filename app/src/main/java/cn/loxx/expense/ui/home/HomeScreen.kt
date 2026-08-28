@@ -18,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,6 +62,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var showCreate by remember { mutableStateOf(false) }
+    var deleteTarget by remember { mutableStateOf<TripWithTotal?>(null) }
 
     Scaffold(
         topBar = {
@@ -100,7 +103,7 @@ fun HomeScreen(
                         TripCard(
                             trip = trip,
                             onClick = { onTripClick(trip.trip.id) },
-                            onDelete = { viewModel.deleteTrip(trip.trip) },
+                            onDelete = { deleteTarget = trip },
                         )
                     }
                 }
@@ -118,6 +121,25 @@ fun HomeScreen(
             },
         )
     }
+
+    deleteTarget?.let { trip ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("删除行程？") },
+            text = { Text("将同时删除该行程的全部费用和凭证，此操作无法撤销。") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteTrip(trip.trip)
+                        deleteTarget = null
+                    },
+                ) { Text("删除") }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) { Text("取消") }
+            },
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -131,10 +153,8 @@ private fun TripCard(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) {
                 onDelete()
-                true
-            } else {
-                false
             }
+            false
         },
     )
 
@@ -199,17 +219,26 @@ private fun TripCard(
 
 @Composable
 private fun StatusChip(status: String) {
-    val (label, container) = when (status) {
-        "completed" -> "已完成" to MaterialTheme.colorScheme.secondaryContainer
-        "reported" -> "已报销" to MaterialTheme.colorScheme.tertiaryContainer
-        else -> "进行中" to MaterialTheme.colorScheme.primaryContainer
+    val (label, colors) = when (status) {
+        "completed" -> "已完成" to (
+            MaterialTheme.colorScheme.secondaryContainer to
+                MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        "reported" -> "已报销" to (
+            MaterialTheme.colorScheme.tertiaryContainer to
+                MaterialTheme.colorScheme.onTertiaryContainer
+            )
+        else -> "进行中" to (
+            MaterialTheme.colorScheme.primaryContainer to
+                MaterialTheme.colorScheme.onPrimaryContainer
+            )
     }
     Text(
         text = label,
         style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onPrimaryContainer,
+        color = colors.second,
         modifier = Modifier
-            .background(container, RoundedCornerShape(8.dp))
+            .background(colors.first, RoundedCornerShape(8.dp))
             .padding(horizontal = 8.dp, vertical = 4.dp),
     )
 }

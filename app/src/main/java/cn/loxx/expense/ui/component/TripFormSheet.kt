@@ -1,6 +1,7 @@
 package cn.loxx.expense.ui.component
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -74,25 +75,35 @@ fun TripFormSheet(
             )
             Spacer(Modifier.height(8.dp))
             Row {
-                OutlinedTextField(
-                    value = DateFormats.day(startDate),
-                    onValueChange = {},
-                    label = { Text("开始日期") },
-                    readOnly = true,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { pickingField = "start" },
-                )
+                Box(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = DateFormats.day(startDate),
+                        onValueChange = {},
+                        label = { Text("开始日期") },
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { pickingField = "start" },
+                    )
+                }
                 Spacer(Modifier.width(8.dp))
-                OutlinedTextField(
-                    value = if (endDate == 0L) "进行中" else DateFormats.day(endDate),
-                    onValueChange = {},
-                    label = { Text("结束日期") },
-                    readOnly = true,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { pickingField = "end" },
-                )
+                Box(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = if (endDate == 0L) "进行中" else DateFormats.day(endDate),
+                        onValueChange = {},
+                        label = { Text("结束日期") },
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { pickingField = "end" },
+                    )
+                }
             }
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(

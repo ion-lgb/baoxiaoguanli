@@ -34,6 +34,10 @@ class WebDavClient(baseUrl: String, username: String, password: String) {
         sardine.list(fullUrl(remotePath))
     }
 
+    suspend fun exists(remotePath: String): Boolean = withContext(Dispatchers.IO) {
+        sardine.exists(fullUrl(remotePath))
+    }
+
     suspend fun mkdir(remotePath: String) = withContext(Dispatchers.IO) {
         sardine.createDirectory(fullUrl(remotePath))
     }

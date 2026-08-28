@@ -18,7 +18,7 @@ class AppContainer(context: Context) {
 
     val tripRepository = TripRepository(database.tripDao(), database.receiptDao(), storage)
     val expenseRepository = ExpenseRepository(database.expenseDao(), database.receiptDao(), storage)
-    val categoryRepository = CategoryRepository(database.categoryDao())
+    val categoryRepository = CategoryRepository(database.categoryDao(), database.expenseDao())
     val settingsRepository = SettingsRepository(appContext)
     val syncManager = SyncManager(appContext, database)
 }

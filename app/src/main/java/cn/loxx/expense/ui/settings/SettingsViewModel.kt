@@ -28,8 +28,10 @@ class SettingsViewModel(
         viewModelScope.launch { categoryRepository.rename(category, newName) }
     }
 
-    fun deleteCategory(category: CategoryEntity) {
-        viewModelScope.launch { categoryRepository.delete(category) }
+    fun deleteCategory(category: CategoryEntity, onResult: (String?) -> Unit) {
+        viewModelScope.launch {
+            onResult(runCatching { categoryRepository.delete(category) }.exceptionOrNull()?.toMessage())
+        }
     }
 
     fun testConnection(client: WebDavClient, onResult: (Boolean) -> Unit) {

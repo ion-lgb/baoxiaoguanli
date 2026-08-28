@@ -71,18 +71,27 @@ fun ReportPreviewScreen(tripId: Long, onBack: () -> Unit) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val pendingSaveFile = remember { mutableStateOf<File?>(null) }
 
-    val saveLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument(exported?.mime ?: "application/octet-stream"),
-    ) { uri ->
+    fun copyPendingFile(uri: android.net.Uri?) {
         val file = pendingSaveFile.value
-        if (uri != null && file != null) {
-            runCatching {
-                context.contentResolver.openOutputStream(uri)?.use { out ->
-                    file.inputStream().use { input -> input.copyTo(out) }
-                }
-            }
+        if (uri == null || file == null) return
+        runCatching {
+            val output = context.contentResolver.openOutputStream(uri)
+                ?: throw IllegalStateException("无法打开目标文件")
+            output.use { out -> file.inputStream().use { input -> input.copyTo(out) } }
+        }.onFailure { error ->
+            errorMessage = error.message ?: "保存文件失败"
         }
+        pendingSaveFile.value = null
     }
+
+    val savePdfLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf"),
+        ::copyPendingFile,
+    )
+    val saveZipLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip"),
+        ::copyPendingFile,
+    )
 
     Scaffold(
         topBar = {
@@ -236,12 +245,16 @@ fun ReportPreviewScreen(tripId: Long, onBack: () -> Unit) {
                     onClick = {
                         pendingSaveFile.value = result.file
                         exported = null
-                        saveLauncher.launch(result.file.name)
+                        if (result.mime == "application/pdf") {
+                            savePdfLauncher.launch(result.file.name)
+                        } else {
+                            saveZipLauncher.launch(result.file.name)
+                        }
                     },
                 ) {
                     Text("保存到文件")
                 }
-            },
+            }
         )
     }
 

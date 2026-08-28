@@ -18,6 +18,9 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses WHERE id = :id")
     fun getById(id: Long): Flow<ExpenseEntity?>
 
+    @Query("SELECT COUNT(*) FROM expenses WHERE categoryId = :categoryId")
+    suspend fun countByCategoryId(categoryId: Long): Long
+
     @Insert
     suspend fun insert(expense: ExpenseEntity): Long
 

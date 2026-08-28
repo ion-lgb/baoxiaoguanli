@@ -14,6 +14,8 @@ import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import androidx.room3.withWriteTransaction
+import androidx.room3.withReadTransaction
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -35,14 +37,18 @@ class SyncManager(private val context: Context, private val database: AppDatabas
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun backup(client: WebDavClient) {
-        val backup = BackupData(
-            trips = database.tripDao().getAll().first(),
-            expenses = database.expenseDao().getAll().first(),
-            receipts = database.receiptDao().getAll().first(),
-            categories = database.categoryDao().getAll().first(),
-        )
+        val backup = database.withReadTransaction {
+            BackupData(
+                trips = database.tripDao().getAll().first(),
+                expenses = database.expenseDao().getAll().first(),
+                receipts = database.receiptDao().getAll().first(),
+                categories = database.categoryDao().getAll().first(),
+            )
+        }
 
-        client.mkdir("expense-backups")
+        if (!client.exists("expense-backups")) {
+            client.mkdir("expense-backups")
+        }
         val name = "backup_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.zip"
         client.upload("expense-backups/$name", buildBackupZip(backup))
     }
@@ -51,23 +57,21 @@ class SyncManager(private val context: Context, private val database: AppDatabas
         val name = remoteName ?: listBackups(client).firstOrNull()
             ?: throw IllegalStateException("服务器上没有可用的备份")
         val (backup, receipts) = parseBackupZip(client.download("expense-backups/$name"))
+        val stagedReceipts = stageReceiptFiles(backup.receipts, receipts)
 
-        // trips cascade to expenses, expenses cascade to receipts.
-        database.tripDao().deleteAll()
-        database.categoryDao().deleteAll()
-        File(context.filesDir, "receipts").deleteRecursively()
-
-        backup.categories.forEach { database.categoryDao().insert(it) }
-        backup.trips.forEach { database.tripDao().insert(it) }
-        backup.expenses.forEach { database.expenseDao().insert(it) }
-        backup.receipts.forEach { database.receiptDao().insert(it) }
-
-        backup.receipts.forEach { receipt ->
-            receipts[receipt.filePath]?.let { bytes ->
-                val file = File(context.filesDir, receipt.filePath)
-                file.parentFile?.mkdirs()
-                file.writeBytes(bytes)
+        try {
+            database.withWriteTransaction {
+                // trips cascade to expenses, expenses cascade to receipts.
+                database.tripDao().deleteAll()
+                database.categoryDao().deleteAll()
+                backup.categories.forEach { database.categoryDao().insert(it) }
+                backup.trips.forEach { database.tripDao().insert(it) }
+                backup.expenses.forEach { database.expenseDao().insert(it) }
+                backup.receipts.forEach { database.receiptDao().insert(it) }
             }
+            replaceReceiptDirectory(stagedReceipts)
+        } finally {
+            stagedReceipts.deleteRecursively()
         }
     }
 
@@ -93,6 +97,31 @@ class SyncManager(private val context: Context, private val database: AppDatabas
             }
         }
         return output.toByteArray()
+    }
+
+    private fun stageReceiptFiles(
+        receiptEntities: List<ReceiptEntity>,
+        receiptBytes: Map<String, ByteArray>,
+    ): File {
+        val stagingDir = File(context.cacheDir, "restore-receipts-${System.currentTimeMillis()}")
+        receiptEntities.forEach { receipt ->
+            val bytes = receiptBytes[receipt.filePath]
+                ?: throw IllegalStateException("备份文件损坏：缺少凭证 ${receipt.filePath}")
+            val relativePath = receipt.filePath.removePrefix("receipts/")
+            val file = File(stagingDir, relativePath)
+            file.parentFile?.mkdirs()
+            file.writeBytes(bytes)
+        }
+        return stagingDir
+    }
+
+    private fun replaceReceiptDirectory(stagedReceipts: File) {
+        val target = File(context.filesDir, "receipts")
+        if (!target.deleteRecursively()) {
+            throw IllegalStateException("无法清理本地凭证目录")
+        }
+        target.mkdirs()
+        stagedReceipts.copyRecursively(target, overwrite = true)
     }
 
     private fun parseBackupZip(zip: ByteArray): Pair<BackupData, Map<String, ByteArray>> {

@@ -24,18 +24,27 @@ class ExcelExporter {
         receipts: List<ReceiptExport>,
     ): ByteArray {
         val categoryById = categories.associateBy { it.id }
+        val expenseById = expenses.associateBy { it.id }
         val indexByExpenseId = expenses.mapIndexed { index, e -> e.id to index }.toMap()
+        val receiptIndexByReceipt = receipts
+            .groupBy { it.expenseId }
+            .values
+            .flatMap { grouped -> grouped.mapIndexed { index, receipt -> receipt to index } }
+            .toMap()
 
         fun zipName(receipt: ReceiptExport): String {
-            val index = indexByExpenseId[receipt.expenseId] ?: 0
-            val expense = expenses.getOrNull(index)
-            val categoryName = categoryById[expense?.categoryId]?.name ?: "其他"
-            val desc = (expense?.description ?: "")
+            val expense = expenseById[receipt.expenseId]
+                ?: throw IllegalArgumentException("凭证关联的费用不存在: expenseId=${receipt.expenseId}")
+            val expenseIndex = indexByExpenseId.getValue(receipt.expenseId)
+            val receiptIndex = receiptIndexByReceipt.getValue(receipt)
+            val categoryName = categoryById[expense.categoryId]?.name ?: "其他"
+            val desc = expense.description
                 .replace(Regex("[\\\\/:*?\"<>|]"), "_")
                 .take(20)
-            val seq = (index + 1).toString().padStart(3, '0')
+            val expenseSeq = (expenseIndex + 1).toString().padStart(3, '0')
+            val receiptSeq = (receiptIndex + 1).toString().padStart(2, '0')
             val ext = if (receipt.fileType == "pdf") "pdf" else "jpg"
-            return "${seq}_${categoryName}_${desc}.$ext"
+            return "${expenseSeq}_${categoryName}_${desc}_${receiptSeq}.$ext"
         }
 
         val xlsxBytes = buildXlsx(expenses, categoryById, receipts, ::zipName)

@@ -17,9 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -226,50 +224,55 @@ fun AddEditExpenseScreen(
             )
             Spacer(Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = DateFormats.day(date),
-                onValueChange = {},
-                label = { Text("日期") },
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showDatePicker = true },
-            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = DateFormats.day(date),
+                    onValueChange = {},
+                    label = { Text("日期") },
+                    readOnly = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { showDatePicker = true },
+                )
+            }
             Spacer(Modifier.height(24.dp))
 
             Text("凭证", style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.height(8.dp))
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
+                maxItemsInEachRow = 3,
             ) {
-                items(uiState.receipts, key = { it.id }) { receipt ->
+                uiState.receipts.forEach { receipt ->
                     ReceiptBox(
                         model = File(context.filesDir, receipt.filePath),
                         isPdf = receipt.fileType == "pdf",
                         onRemove = { viewModel.deleteReceipt(receipt) },
                     )
                 }
-                items(pendingReceipts.size) { index ->
-                    val p = pendingReceipts[index]
+                pendingReceipts.forEachIndexed { index, pending ->
                     ReceiptBox(
-                        model = p.uri,
-                        isPdf = p.fileType == "pdf",
-                        onRemove = { pendingReceipts = pendingReceipts.filterIndexed { i, _ -> i != index } },
+                        model = pending.uri,
+                        isPdf = pending.fileType == "pdf",
+                        onRemove = {
+                            pendingReceipts = pendingReceipts.filterIndexed { i, _ -> i != index }
+                        },
                     )
                 }
-                item {
-                    Box(
-                        modifier = Modifier
-                            .size(96.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .clickable { showAddOptions = true },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Filled.Add, contentDescription = "添加凭证")
-                    }
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { showAddOptions = true },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "添加凭证")
                 }
             }
 
