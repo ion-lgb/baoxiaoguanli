@@ -75,6 +75,8 @@ fun SettingsScreen(onBack: () -> Unit) {
     var renameTarget by remember { mutableStateOf<CategoryEntity?>(null) }
     var renameText by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<CategoryEntity?>(null) }
+    var userNameField by remember { mutableStateOf(settings.userName) }
+    var departmentField by remember { mutableStateOf(settings.department) }
 
     var showResult by remember { mutableStateOf(false) }
     var resultTitle by remember { mutableStateOf("") }
@@ -111,16 +113,16 @@ fun SettingsScreen(onBack: () -> Unit) {
         ) {
             SectionCard("个人信息") {
                 OutlinedTextField(
-                    value = settings.userName,
-                    onValueChange = { settings.userName = it },
+                    value = userNameField,
+                    onValueChange = { userNameField = it; settings.userName = it },
                     label = { Text("报销人姓名") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
-                    value = settings.department,
-                    onValueChange = { settings.department = it },
+                    value = departmentField,
+                    onValueChange = { departmentField = it; settings.department = it },
                     label = { Text("所属部门") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
