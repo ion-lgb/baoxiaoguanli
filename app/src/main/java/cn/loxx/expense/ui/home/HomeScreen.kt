@@ -1,6 +1,7 @@
 package cn.loxx.expense.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -55,10 +57,15 @@ import cn.loxx.expense.data.model.AmountFormatter
 import cn.loxx.expense.data.model.TripWithTotal
 import cn.loxx.expense.ui.component.DateFormats
 import cn.loxx.expense.ui.component.TripFormSheet
+import cn.loxx.expense.ui.component.TripPickerSheet
+import cn.loxx.expense.ui.expense.ExpenseFormSheet
 import cn.loxx.expense.ui.theme.GlassCard
 import cn.loxx.expense.ui.theme.GlassShapes
 import cn.loxx.expense.ui.theme.GlassScaffold
 import cn.loxx.expense.ui.theme.rememberStatusColors
+
+/** Which slice of trips the list shows; driven by tapping the summary cards. */
+private enum class TripFilter { ALL, ONGOING, PENDING }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +79,15 @@ fun HomeScreen(
 
     var showCreate by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<TripWithTotal?>(null) }
+    var pickingTripForExpense by remember { mutableStateOf(false) }
+    var quickAddTripId by remember { mutableStateOf<Long?>(null) }
+    var filter by remember { mutableStateOf(TripFilter.ALL) }
+
+    val filteredTrips = when (filter) {
+        TripFilter.ONGOING -> uiState.trips.filter { it.trip.status == "ongoing" }
+        TripFilter.PENDING -> uiState.trips.filter { it.trip.status != "reported" }
+        TripFilter.ALL -> uiState.trips
+    }
 
     GlassScaffold(
         topBar = {
@@ -92,13 +108,22 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showCreate = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(18.dp),
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "新建行程")
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SmallFloatingActionButton(
+                    onClick = { showCreate = true },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                ) {
+                    Icon(Icons.Filled.Luggage, contentDescription = "新建行程")
+                }
+                FloatingActionButton(
+                    onClick = { pickingTripForExpense = true },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(18.dp),
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "记一笔")
+                }
             }
         },
     ) { innerPadding ->
@@ -109,19 +134,38 @@ fun HomeScreen(
                     .padding(innerPadding),
                 onCreate = { showCreate = true },
             )
-        } else if (uiState.trips.isNotEmpty()) {
+        } else if (uiState.trips.isNotEmpty() && filteredTrips.isEmpty()) {
+            Text(
+                text = "没有符合筛选条件的行程，再点一下汇总卡可取消筛选",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(innerPadding)
+                    .padding(32.dp),
+            )
+        } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     end = 16.dp,
                     top = innerPadding.calculateTopPadding() + 4.dp,
-                    bottom = innerPadding.calculateBottomPadding() + 88.dp,
+                    bottom = innerPadding.calculateBottomPadding() + 96.dp,
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                item(key = "summary") { SummaryBar(uiState.summary) }
-                items(uiState.trips, key = { it.trip.id }) { trip ->
+                item(key = "summary") {
+                    SummaryBar(
+                        summary = uiState.summary,
+                        selected = filter,
+                        onSelect = { next ->
+                            filter = if (filter == next) TripFilter.ALL else next
+                        },
+                    )
+                }
+                items(filteredTrips, key = { it.trip.id }) { trip ->
                     TripCard(
                         trip = trip,
                         onClick = { onTripClick(trip.trip.id) },
@@ -139,6 +183,32 @@ fun HomeScreen(
             onSubmit = { title, destination, start, end, note ->
                 viewModel.createTrip(title, destination, start, end, note)
                 showCreate = false
+            },
+        )
+    }
+
+    if (pickingTripForExpense) {
+        TripPickerSheet(
+            trips = uiState.trips,
+            onDismiss = { pickingTripForExpense = false },
+            onSelect = { tripId ->
+                pickingTripForExpense = false
+                quickAddTripId = tripId
+            },
+        )
+    }
+
+    quickAddTripId?.let { tripId ->
+        val trip = uiState.trips.firstOrNull { it.trip.id == tripId }
+        ExpenseFormSheet(
+            tripId = tripId,
+            expenseId = 0L,
+            tripStartDate = trip?.trip?.startDate ?: 0L,
+            tripEndDate = trip?.trip?.endDate ?: 0L,
+            onDismiss = { quickAddTripId = null },
+            onSaved = {
+                quickAddTripId = null
+                onTripClick(tripId)
             },
         )
     }
@@ -164,25 +234,35 @@ fun HomeScreen(
 }
 
 @Composable
-private fun SummaryBar(summary: HomeSummary) {
+private fun SummaryBar(
+    summary: HomeSummary,
+    selected: TripFilter,
+    onSelect: (TripFilter) -> Unit,
+) {
     val statusColors = rememberStatusColors()
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         StatCard(
             value = "${summary.ongoingCount}",
             label = "进行中行程",
             accent = statusColors.ongoing,
+            selected = selected == TripFilter.ONGOING,
+            onClick = { onSelect(TripFilter.ONGOING) },
             modifier = Modifier.weight(1f),
         )
         StatCard(
             value = "¥${AmountFormatter.formatCentsGrouped(summary.yearTotalCents)}",
             label = "今年累计",
             accent = MaterialTheme.colorScheme.onSurface,
+            selected = false,
+            onClick = { onSelect(TripFilter.ALL) },
             modifier = Modifier.weight(1.4f),
         )
         StatCard(
             value = "¥${AmountFormatter.formatCentsGrouped(summary.pendingTotalCents)}",
             label = "待报销",
             accent = statusColors.reported,
+            selected = selected == TripFilter.PENDING,
+            onClick = { onSelect(TripFilter.PENDING) },
             modifier = Modifier.weight(1.4f),
         )
     }
@@ -193,9 +273,26 @@ private fun StatCard(
     value: String,
     label: String,
     accent: Color,
+    selected: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    GlassCard(modifier = modifier, shape = GlassShapes.item, contentPadding = PaddingValues(14.dp)) {
+    GlassCard(
+        modifier = modifier.then(
+            if (selected) {
+                Modifier.border(
+                    width = 1.5.dp,
+                    color = accent,
+                    shape = GlassShapes.item,
+                )
+            } else {
+                Modifier
+            },
+        ),
+        shape = GlassShapes.item,
+        contentPadding = PaddingValues(14.dp),
+        onClick = onClick,
+    ) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleLarge,

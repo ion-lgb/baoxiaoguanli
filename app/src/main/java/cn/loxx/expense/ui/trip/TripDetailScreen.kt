@@ -1,5 +1,12 @@
 package cn.loxx.expense.ui.trip
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -100,6 +107,7 @@ fun TripDetailScreen(
     var expandedExpenseIds by remember { mutableStateOf(setOf<Long>()) }
     var editingExpenseId by remember { mutableStateOf<Long?>(null) }
     var deleteExpenseTarget by remember { mutableStateOf<ExpenseEntity?>(null) }
+    var showDeleteTrip by remember { mutableStateOf(false) }
 
     val receiptsByExpense = remember(uiState.receipts) { uiState.receipts.groupBy { it.expenseId } }
     val grouped = remember(uiState.expenses) { uiState.expenses.groupBy { DateFormats.day(it.date) } }
@@ -142,6 +150,10 @@ fun TripDetailScreen(
                         DropdownMenuItem(
                             text = { Text("生成报销单") },
                             onClick = { menuOpen = false; onGenerateReport() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("删除行程", color = MaterialTheme.colorScheme.error) },
+                            onClick = { menuOpen = false; showDeleteTrip = true },
                         )
                     }
                 },
@@ -258,6 +270,26 @@ fun TripDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { deleteExpenseTarget = null }) { Text("取消") }
+            },
+        )
+    }
+
+    if (showDeleteTrip) {
+        AlertDialog(
+            onDismissRequest = { showDeleteTrip = false },
+            title = { Text("删除行程？") },
+            text = { Text("将同时删除该行程的全部费用和凭证，此操作无法撤销。") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteTrip = false
+                        viewModel.deleteTrip()
+                        onBack()
+                    },
+                ) { Text("删除", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteTrip = false }) { Text("取消") }
             },
         )
     }
@@ -429,7 +461,13 @@ private fun ExpenseCard(
                 )
             }
 
-            androidx.compose.animation.AnimatedVisibility(visible = expanded) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(
+                    animationSpec = tween(260, easing = EaseOutCubic),
+                ) + fadeIn(tween(200)),
+                exit = shrinkVertically(tween(200)) + fadeOut(tween(150)),
+            ) {
                 Column {
                     if (receipts.isNotEmpty()) {
                         Row(

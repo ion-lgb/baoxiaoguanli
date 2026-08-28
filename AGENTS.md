@@ -98,7 +98,7 @@ There is no lint/format config beyond AGP defaults.
 | Compose | BOM `2026.08.00`, Material3 |
 | SDK | compileSdk/targetSdk **37**, minSdk **26**; Java/jvmTarget **17** |
 | Repos | `google()`, `mavenCentral()`, `jitpack.io` (sardine-android) |
-| Key deps | Room `androidx.room3:*` **3.0.1**, Coil 3, **iText 7 `kernel`/`io`/`layout` 7.2.6** (NOT `itext7-core` — AWT breaks Android), POI 5.5.1 + `com.fasterxml:aalto-xml` 1.4.0, `com.github.thegrizzlylabs:sardine-android:0.9`, kotlinx-serialization/coroutines |
+| Key deps | Room `androidx.room3:*` **3.0.1**, Coil 3, Haze **1.7.2** (glass blur), **iText 7 `kernel`/`io`/`layout` 7.2.6** (NOT `itext7-core` — AWT breaks Android), POI 5.5.1 + `com.fasterxml:aalto-xml` 1.4.0, `com.github.thegrizzlylabs:sardine-android:0.9`, ML Kit `text-recognition-chinese` **16.0.1** (bundled OCR, adds ~20MB), androidx.biometric **1.1.0** + appcompat (lock), kotlinx-serialization/coroutines |
 | sardine package | `com.thegrizzlylabs.sardineandroid.*` (not `com.github.sardine.*`) |
 
 **Build-file gotchas** (from real fixes during this project):
@@ -110,5 +110,5 @@ There is no lint/format config beyond AGP defaults.
 ## Testing & QA
 
 - Framework: **JUnit4** (`junit:junit:4.13.2`), pure JVM (no Robolectric/Android), source set `app/src/test`.
-- Tests: `AmountFormatterTest` (cents↔yuan), `PdfExporterTest` (non-empty PDF >1KB, `fontBytes=null` → Helvetica), `ExcelExporterTest` (xlsx row count, sets StAX properties in `@Before`).
+- Tests: `AmountFormatterTest` (cents↔yuan), `PdfExporterTest` (non-empty PDF >1KB, `fontBytes=null` → Helvetica), `ExcelExporterTest` (xlsx row count, sets StAX properties in `@Before`), `ReceiptOcrTest` (OCR text→amount/date/description parsing), `AppLockTest` / `AutoBackupTest` (lock & backup policy predicates), `HomeSummaryTest` (home summary aggregation).
 - Run: `./gradlew test`. No instrumentation/`androidTest`, no coverage target. Add only behavior-defending tests (real classes, no mocks).

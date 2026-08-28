@@ -83,4 +83,9 @@ class TripDetailViewModel(
     fun deleteExpense(expense: ExpenseEntity) {
         viewModelScope.launch { expenseRepository.deleteExpense(expense) }
     }
+
+    fun deleteTrip() {
+        val trip = uiState.value.trip ?: return
+        viewModelScope.launch { tripRepository.deleteTrip(trip) }
+    }
 }

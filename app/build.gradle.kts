@@ -128,6 +128,9 @@ dependencies {
 
     implementation("io.coil-kt.coil3:coil-compose:3.5.0")
     implementation("dev.chrisbanes.haze:haze:1.7.2")
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 

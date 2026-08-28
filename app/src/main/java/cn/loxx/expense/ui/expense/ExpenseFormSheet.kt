@@ -44,11 +44,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,9 +68,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cn.loxx.expense.ExpenseApp
 import cn.loxx.expense.data.model.AmountFormatter
+import cn.loxx.expense.data.ocr.ReceiptOcr
 import cn.loxx.expense.ui.component.CategoryIcons
 import cn.loxx.expense.ui.component.DateFormats
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 
 /**
@@ -83,6 +88,7 @@ fun ExpenseFormSheet(
     tripStartDate: Long,
     tripEndDate: Long,
     onDismiss: () -> Unit,
+    onSaved: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as ExpenseApp
@@ -121,10 +127,41 @@ fun ExpenseFormSheet(
     }
 
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
+    val scope = rememberCoroutineScope()
+    var ocrHint by remember { mutableStateOf<String?>(null) }
+
+    fun fillFromOcr(uri: Uri, isPdf: Boolean) {
+        scope.launch {
+            val parsed = if (isPdf) {
+                ReceiptOcr.recognizePdf(context, uri)
+            } else {
+                ReceiptOcr.recognize(context, uri)
+            } ?: return@launch
+            val found = mutableListOf<String>()
+            parsed.amountCents?.let { cents ->
+                if (amountText.isBlank()) {
+                    amountText = AmountFormatter.formatCents(cents)
+                    found.add("¥${AmountFormatter.formatCents(cents)}")
+                }
+            }
+            parsed.dateMillis?.let { millis ->
+                date = millis
+                found.add(DateFormats.day(millis))
+            }
+            if (description.isBlank() && !parsed.description.isNullOrBlank()) {
+                description = parsed.description
+            }
+            ocrHint = if (found.isEmpty()) null else "已从凭证识别：${found.joinToString(" · ")}"
+            delay(4_000)
+            if (ocrHint?.startsWith("已从凭证识别") == true) ocrHint = null
+        }
+    }
+
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         if (ok) {
             cameraUri?.let { uri ->
                 pendingReceipts = pendingReceipts + PendingReceipt(uri, "image", "照片.jpg")
+                fillFromOcr(uri, isPdf = false)
             }
         }
     }
@@ -132,10 +169,12 @@ fun ExpenseFormSheet(
         ActivityResultContracts.PickMultipleVisualMedia(maxItems = 9),
     ) { uris ->
         pendingReceipts = pendingReceipts + uris.map { PendingReceipt(it, "image", "图片.jpg") }
+        uris.firstOrNull()?.let { fillFromOcr(it, isPdf = false) }
     }
     val pdfLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             pendingReceipts = pendingReceipts + PendingReceipt(uri, "pdf", "文档.pdf")
+            fillFromOcr(uri, isPdf = true)
         }
     }
 
@@ -147,7 +186,10 @@ fun ExpenseFormSheet(
         cameraLauncher.launch(uri)
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    // Full expansion: a form must show all its fields at once instead of
+    // forcing a two-step (expand sheet, then scroll) interaction.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -293,6 +335,15 @@ fun ExpenseFormSheet(
                 AddReceiptTile(onClick = { showAddOptions = true })
             }
 
+            ocrHint?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
             error?.let {
                 Spacer(Modifier.height(8.dp))
                 Text(it, color = MaterialTheme.colorScheme.error)
@@ -311,8 +362,10 @@ fun ExpenseFormSheet(
                             description.trim(),
                             date,
                             pendingReceipts,
-                            onDismiss,
-                        )
+                        ) {
+                            onSaved()
+                            onDismiss()
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

@@ -1,5 +1,8 @@
 package cn.loxx.expense.ui.theme
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -8,6 +11,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -24,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -245,7 +252,7 @@ private fun Modifier.glassBorder(shape: Shape, brush: Brush, width: Dp = 1.dp): 
         drawOutline(outline, brush, style = Stroke(width.toPx()))
     }
 
-/** Frosted card used on aurora-backed screens. */
+/** Frosted card used on aurora-backed screens. Clickable cards get a subtle press-spring scale. */
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
@@ -254,10 +261,20 @@ fun GlassCard(
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val container = modifier.glassEffect(shape)
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.98f else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow),
+        label = "pressScale",
+    )
+    val container = modifier
+        .graphicsLayer { scaleX = scale; scaleY = scale }
+        .glassEffect(shape)
     if (onClick != null) {
         Surface(
             onClick = onClick,
+            interactionSource = interaction,
             shape = shape,
             color = Color.Transparent,
             contentColor = contentColorFor(MaterialTheme.colorScheme.background),

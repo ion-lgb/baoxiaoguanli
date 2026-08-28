@@ -32,4 +32,20 @@ class SettingsRepository(context: Context) {
     var webdavPass: String
         get() = prefs.getString("webdavPass", "") ?: ""
         set(value) = prefs.edit().putString("webdavPass", value).apply()
+
+    var appLockEnabled: Boolean
+        get() = prefs.getBoolean("appLockEnabled", false)
+        set(value) = prefs.edit().putBoolean("appLockEnabled", value).apply()
+
+    var autoBackupEnabled: Boolean
+        get() = prefs.getBoolean("autoBackupEnabled", false)
+        set(value) = prefs.edit().putBoolean("autoBackupEnabled", value).apply()
+
+    var lastAutoBackupAt: Long
+        get() = prefs.getLong("lastAutoBackupAt", 0L)
+        set(value) = prefs.edit().putLong("lastAutoBackupAt", value).apply()
+
+    var lastAutoBackupResult: String
+        get() = prefs.getString("lastAutoBackupResult", "") ?: ""
+        set(value) = prefs.edit().putString("lastAutoBackupResult", value).apply()
 }

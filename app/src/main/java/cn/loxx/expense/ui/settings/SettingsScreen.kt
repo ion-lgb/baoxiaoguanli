@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -55,10 +56,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cn.loxx.expense.ExpenseApp
 import cn.loxx.expense.data.local.CategoryEntity
+import cn.loxx.expense.data.repository.SettingsRepository
 import cn.loxx.expense.data.webdav.WebDavClient
 import cn.loxx.expense.ui.component.CategoryIcons
 import cn.loxx.expense.ui.theme.GlassCard
 import cn.loxx.expense.ui.theme.GlassScaffold
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -142,6 +147,15 @@ fun SettingsScreen(onBack: () -> Unit) {
                 )
             }
 
+            SectionCard("安全") {
+                SwitchRow(
+                    title = "启动时需要验证",
+                    subtitle = "使用指纹、人脸或锁屏密码解锁应用",
+                    checked = settings.appLockEnabled,
+                    onCheckedChange = { settings.appLockEnabled = it },
+                )
+            }
+
             SectionCard("分类管理") {
                 categories.forEach { category ->
                     Row(
@@ -220,6 +234,21 @@ fun SettingsScreen(onBack: () -> Unit) {
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Spacer(Modifier.height(12.dp))
+                SwitchRow(
+                    title = "每日自动备份",
+                    subtitle = "每天首次打开应用时自动备份到 WebDAV",
+                    checked = settings.autoBackupEnabled,
+                    onCheckedChange = { settings.autoBackupEnabled = it },
+                )
+                if (settings.autoBackupEnabled) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = autoBackupStatusLine(settings),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
@@ -412,6 +441,45 @@ fun SettingsScreen(onBack: () -> Unit) {
                 TextButton(onClick = { showResult = false }) { Text("确定") }
             },
         )
+    }
+}
+
+@Composable
+private fun SwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+private fun autoBackupStatusLine(settings: SettingsRepository): String {
+    val result = settings.lastAutoBackupResult
+    val at = settings.lastAutoBackupAt
+    return when {
+        // failures intentionally keep lastAutoBackupAt unset so the next launch retries
+        result.isBlank() -> "尚未自动备份过"
+        at <= 0L -> "上次自动备份：$result"
+        else -> {
+            val time = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(at))
+            "上次自动备份：$time · $result"
+        }
     }
 }
 
