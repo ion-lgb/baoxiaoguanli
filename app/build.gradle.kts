@@ -127,6 +127,7 @@ dependencies {
     implementation("androidx.sqlite:sqlite-bundled:2.7.0")
 
     implementation("io.coil-kt.coil3:coil-compose:3.5.0")
+    implementation("dev.chrisbanes.haze:haze:1.7.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 

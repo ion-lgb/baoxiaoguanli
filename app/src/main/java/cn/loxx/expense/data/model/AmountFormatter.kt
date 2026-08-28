@@ -2,6 +2,7 @@ package cn.loxx.expense.data.model
 
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.util.Locale
 
 /**
  * Amount helpers. All money is stored as integer cents (Long); display/input use
@@ -12,6 +13,16 @@ object AmountFormatter {
         BigDecimal.valueOf(cents)
             .divide(BigDecimal(100), 2, RoundingMode.HALF_UP)
             .toPlainString()
+
+    /** Grouped display for summaries: "1,234" when whole yuan, "1,234.56" otherwise. */
+    fun formatCentsGrouped(cents: Long): String {
+        val whole = cents / 100
+        return if (cents % 100 == 0L) {
+            String.format(Locale.CHINA, "%,d", whole)
+        } else {
+            String.format(Locale.CHINA, "%,.2f", cents / 100.0)
+        }
+    }
 
     /** Returns cents, or null when [yuan] is blank, malformed, or negative. */
     fun parseToCents(yuan: String): Long? {

@@ -5,7 +5,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import cn.loxx.expense.ui.expense.AddEditExpenseScreen
 import cn.loxx.expense.ui.expense.ReceiptViewScreen
 import cn.loxx.expense.ui.home.HomeScreen
 import cn.loxx.expense.ui.report.ReportPreviewScreen
@@ -27,22 +26,10 @@ fun ExpenseNavHost() {
             TripDetailScreen(
                 tripId = route.tripId,
                 onBack = { navController.popBackStack() },
-                onAddExpense = { navController.navigate(AddEditExpenseRoute(route.tripId)) },
-                onEditExpense = { expenseId ->
-                    navController.navigate(AddEditExpenseRoute(route.tripId, expenseId))
-                },
                 onViewReceipt = { receiptId ->
                     navController.navigate(ReceiptViewRoute(receiptId))
                 },
                 onGenerateReport = { navController.navigate(ReportPreviewRoute(route.tripId)) },
-            )
-        }
-        composable<AddEditExpenseRoute> { entry ->
-            val route = entry.toRoute<AddEditExpenseRoute>()
-            AddEditExpenseScreen(
-                tripId = route.tripId,
-                expenseId = route.expenseId,
-                onBack = { navController.popBackStack() },
             )
         }
         composable<ReceiptViewRoute> { entry ->

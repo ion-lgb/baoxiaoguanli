@@ -39,7 +39,7 @@ class ExcelExporter {
             val receiptIndex = receiptIndexByReceipt.getValue(receipt)
             val categoryName = categoryById[expense.categoryId]?.name ?: "其他"
             val desc = expense.description
-                .replace(Regex("[\\\\/:*?\"<>|]"), "_")
+                .replace(Regex("[\\\\/:*?\"<>| ]"), "_")
                 .take(20)
             val expenseSeq = (expenseIndex + 1).toString().padStart(3, '0')
             val receiptSeq = (receiptIndex + 1).toString().padStart(2, '0')
@@ -83,7 +83,7 @@ class ExcelExporter {
         }
 
         val headerRow = sheet.createRow(0)
-        listOf("序号", "日期", "分类", "描述", "金额(¥)", "凭证文件名").forEachIndexed { i, label ->
+        listOf("序号", "日期", "分类", "描述", "金额(元)", "凭证文件名").forEachIndexed { i, label ->
             headerRow.createCell(i).apply {
                 setCellValue(label)
                 cellStyle = headerStyle

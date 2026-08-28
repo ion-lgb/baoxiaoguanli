@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,6 +48,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cn.loxx.expense.ExpenseApp
 import cn.loxx.expense.data.model.AmountFormatter
 import cn.loxx.expense.ui.component.DateFormats
+import cn.loxx.expense.ui.theme.GlassCard
+import cn.loxx.expense.ui.theme.GlassScaffold
 import java.io.File
 
 private data class ExportResult(val file: File, val mime: String)
@@ -93,15 +98,22 @@ fun ReportPreviewScreen(tripId: Long, onBack: () -> Unit) {
         ::copyPendingFile,
     )
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopAppBar(
-                title = { Text("报销单预览") },
+                title = {
+                    Text(
+                        "报销单预览",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
     ) { innerPadding ->
@@ -127,9 +139,9 @@ fun ReportPreviewScreen(tripId: Long, onBack: () -> Unit) {
                 )
             }
 
-            Card(
+            GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                contentPadding = PaddingValues(16.dp),
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),

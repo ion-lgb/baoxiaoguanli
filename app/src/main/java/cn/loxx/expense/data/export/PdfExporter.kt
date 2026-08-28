@@ -77,7 +77,8 @@ class PdfExporter {
 
         document.add(Paragraph("费用明细").setFontSize(14f).setBold())
         val detail = Table(floatArrayOf(1f, 2f, 2f, 3f, 2f)).useAllAvailableWidth()
-        listOf("序号", "日期", "分类", "描述", "金额(¥)").forEach {
+        // NOTE: "元" instead of "¥" — the subsetted CJK asset font lacks the U+00A5 glyph.
+        listOf("序号", "日期", "分类", "描述", "金额(元)").forEach {
             detail.addHeaderCell(Cell().add(Paragraph(it).setBold()))
         }
         expenses.forEachIndexed { index, e ->
@@ -95,7 +96,7 @@ class PdfExporter {
 
         document.add(Paragraph("按分类汇总").setFontSize(14f).setBold())
         val summary = Table(floatArrayOf(2f, 2f, 2f)).useAllAvailableWidth()
-        listOf("分类", "笔数", "小计(¥)").forEach {
+        listOf("分类", "笔数", "小计(元)").forEach {
             summary.addHeaderCell(Cell().add(Paragraph(it).setBold()))
         }
         expenses.groupBy { it.categoryId }.forEach { (catId, list) ->

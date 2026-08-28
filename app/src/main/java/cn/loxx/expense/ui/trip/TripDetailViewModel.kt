@@ -62,14 +62,21 @@ class TripDetailViewModel(
     }
 
     fun markCompleted() {
+        setTripStatus("completed") { trip ->
+            trip.copy(
+                endDate = if (trip.endDate == 0L) System.currentTimeMillis() else trip.endDate,
+            )
+        }
+    }
+
+    fun markReported() {
+        setTripStatus("reported")
+    }
+
+    private fun setTripStatus(status: String, transform: (TripEntity) -> TripEntity = { it }) {
         val trip = uiState.value.trip ?: return
         viewModelScope.launch {
-            tripRepository.updateTrip(
-                trip.copy(
-                    status = "completed",
-                    endDate = if (trip.endDate == 0L) System.currentTimeMillis() else trip.endDate,
-                ),
-            )
+            tripRepository.updateTrip(transform(trip).copy(status = status))
         }
     }
 

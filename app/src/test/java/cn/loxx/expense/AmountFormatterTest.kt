@@ -25,4 +25,16 @@ class AmountFormatterTest {
     fun parseToCents_returnsNullForMalformedInput() {
         assertNull(AmountFormatter.parseToCents("abc"))
     }
+
+    @Test
+    fun formatCentsGrouped_groupsWholeYuanWithoutDecimals() {
+        assertEquals("5,214", AmountFormatter.formatCentsGrouped(521_400L))
+        assertEquals("0", AmountFormatter.formatCentsGrouped(0L))
+    }
+
+    @Test
+    fun formatCentsGrouped_keepsDecimalsWhenPresent() {
+        assertEquals("1,234.56", AmountFormatter.formatCentsGrouped(123_456L))
+        assertEquals("0.01", AmountFormatter.formatCentsGrouped(1L))
+    }
 }

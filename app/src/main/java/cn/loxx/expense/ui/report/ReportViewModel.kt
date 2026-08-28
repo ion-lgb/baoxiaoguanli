@@ -24,6 +24,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class CategorySummary(
     val name: String,
@@ -95,7 +98,7 @@ class ReportViewModel(
             val bytes = PdfExporter().generate(
                 trip, state.expenses, state.categories, state.userName, fontBytes, receipts,
             )
-            writeExport("report_${trip.id}.pdf", bytes)
+            writeExport(exportFileName(trip.title, "pdf"), bytes)
         }
     }
 
@@ -109,7 +112,7 @@ class ReportViewModel(
         launchExport(onResult, onError) {
             val receipts = loadReceipts(state.receipts)
             val bytes = ExcelExporter().generate(trip, state.expenses, state.categories, receipts)
-            writeExport("report_${trip.id}.zip", bytes)
+            writeExport(exportFileName(trip.title, "zip"), bytes)
         }
     }
 
@@ -159,5 +162,19 @@ class ReportViewModel(
         val file = File(dir, name)
         file.writeBytes(bytes)
         return file
+    }
+
+    companion object {
+        /** Human-readable, collision-free cache file name: 报销单_标题_时间戳.ext */
+        fun exportFileName(tripTitle: String, extension: String): String {
+            val safeTitle = tripTitle
+                .replace(Regex("[\\\\/:*?\"<>|]"), "_")
+                .trim()
+                .ifBlank { "未命名" }
+                .take(20)
+            val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+                .format(Date())
+            return "报销单_${safeTitle}_${stamp}.$extension"
+        }
     }
 }

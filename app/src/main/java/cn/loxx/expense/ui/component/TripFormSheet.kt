@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -113,7 +114,7 @@ fun TripFormSheet(
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(16.dp))
-            TextButton(
+            Button(
                 onClick = {
                     onSubmit(
                         title.trim(),
@@ -124,9 +125,9 @@ fun TripFormSheet(
                     )
                 },
                 enabled = title.isNotBlank() && destination.isNotBlank(),
-                modifier = Modifier.align(Alignment.End),
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("保存")
+                Text(if (initial == null) "创建行程" else "保存修改")
             }
         }
     }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,11 +32,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -53,6 +57,8 @@ import cn.loxx.expense.ExpenseApp
 import cn.loxx.expense.data.local.CategoryEntity
 import cn.loxx.expense.data.webdav.WebDavClient
 import cn.loxx.expense.ui.component.CategoryIcons
+import cn.loxx.expense.ui.theme.GlassCard
+import cn.loxx.expense.ui.theme.GlassScaffold
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -91,15 +97,22 @@ fun SettingsScreen(onBack: () -> Unit) {
         return WebDavClient(settings.webdavUrl, settings.webdavUser, settings.webdavPass)
     }
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopAppBar(
-                title = { Text("设置") },
+                title = {
+                    Text(
+                        "设置",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
     ) { innerPadding ->
@@ -234,9 +247,9 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
+                    OutlinedButton(
                         onClick = {
-                            val client = clientOrNull() ?: return@Button
+                            val client = clientOrNull() ?: return@OutlinedButton
                             viewModel.restore(client) { error ->
                                 resultTitle = "恢复备份"
                                 resultText = if (error == null) "恢复成功" else "恢复失败：$error"
@@ -245,9 +258,9 @@ fun SettingsScreen(onBack: () -> Unit) {
                         },
                         modifier = Modifier.weight(1f),
                     ) { Text("恢复备份") }
-                    Button(
+                    OutlinedButton(
                         onClick = {
-                            val client = clientOrNull() ?: return@Button
+                            val client = clientOrNull() ?: return@OutlinedButton
                             viewModel.listBackups(client) { backups ->
                                 resultTitle = "备份列表"
                                 resultText =
@@ -273,7 +286,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
-                Button(
+                OutlinedButton(
                     onClick = {
                         context.startActivity(
                             Intent(
@@ -407,19 +420,16 @@ private fun SectionCard(
     title: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
+    GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        contentPadding = PaddingValues(16.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(Modifier.height(12.dp))
-            content()
-        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(Modifier.height(12.dp))
+        content()
     }
 }

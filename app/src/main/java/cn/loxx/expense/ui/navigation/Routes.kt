@@ -9,9 +9,6 @@ object HomeRoute
 data class TripDetailRoute(val tripId: Long)
 
 @Serializable
-data class AddEditExpenseRoute(val tripId: Long, val expenseId: Long = 0)
-
-@Serializable
 data class ReceiptViewRoute(val receiptId: Long)
 
 @Serializable
