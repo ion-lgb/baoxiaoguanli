@@ -1,10 +1,41 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
+}
+val releaseVersionName = providers.gradleProperty("releaseVersionName").orNull
+val releaseVersionCodeText = providers.gradleProperty("releaseVersionCode").orNull
+val releaseVersionCode = releaseVersionCodeText?.toIntOrNull()
+    ?: if (releaseVersionCodeText == null) null else throw GradleException(
+        "releaseVersionCode must be a valid integer, got: $releaseVersionCodeText",
+    )
+
+if ((releaseVersionName == null) != (releaseVersionCode == null)) {
+    throw GradleException(
+        "releaseVersionName and releaseVersionCode must be supplied together.",
+    )
+}
+
+val releaseTaskRequested = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+val releaseSigningValues = mapOf(
+    "ANDROID_KEYSTORE_PATH" to providers.environmentVariable("ANDROID_KEYSTORE_PATH").orNull,
+    "ANDROID_KEYSTORE_PASSWORD" to providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull,
+    "ANDROID_KEY_ALIAS" to providers.environmentVariable("ANDROID_KEY_ALIAS").orNull,
+    "ANDROID_KEY_PASSWORD" to providers.environmentVariable("ANDROID_KEY_PASSWORD").orNull,
+)
+val missingReleaseSigningValues = releaseSigningValues.filterValues { it.isNullOrBlank() }.keys
+
+if (releaseTaskRequested && missingReleaseSigningValues.isNotEmpty()) {
+    throw GradleException(
+        "Release signing is incomplete. Missing environment variables: " +
+            missingReleaseSigningValues.sorted().joinToString(", "),
+    )
 }
 
 android {
@@ -15,8 +46,19 @@ android {
         applicationId = "cn.loxx.expense"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = releaseVersionCode ?: 1
+        versionName = releaseVersionName ?: "1.0"
+    }
+
+    val releaseSigningConfig = if (missingReleaseSigningValues.isEmpty()) {
+        signingConfigs.create("release") {
+            storeFile = file(requireNotNull(releaseSigningValues["ANDROID_KEYSTORE_PATH"]))
+            storePassword = requireNotNull(releaseSigningValues["ANDROID_KEYSTORE_PASSWORD"])
+            keyAlias = requireNotNull(releaseSigningValues["ANDROID_KEY_ALIAS"])
+            keyPassword = requireNotNull(releaseSigningValues["ANDROID_KEY_PASSWORD"])
+        }
+    } else {
+        null
     }
 
     buildTypes {
@@ -27,6 +69,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = releaseSigningConfig
         }
     }
 

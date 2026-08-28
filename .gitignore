@@ -16,6 +16,9 @@ captures/
 .cxx/
 *.apk
 *.aab
+*.jks
+*.keystore
+keystore.properties
 
 # Kotlin
 .kotlin/
