@@ -7,9 +7,9 @@
 
 ## 截图
 
-| 首页（汇总 + 行程） | 行程详情（分类占比） |
-| --- | --- |
-| ![首页](docs/screenshots/home.png) | ![行程详情](docs/screenshots/trip_detail.png) |
+| 首页（汇总 + 行程） | 行程详情（分类占比） | 全局记一笔 |
+| --- | --- | --- |
+| ![首页](docs/screenshots/home.png) | ![行程详情](docs/screenshots/trip_detail.png) | ![记到哪个行程](docs/screenshots/trip_picker.png) |
 
 | 记一笔（底部弹窗） | 报销单预览 | 深色模式 |
 | --- | --- | --- |
